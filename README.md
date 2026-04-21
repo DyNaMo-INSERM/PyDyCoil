@@ -1,13 +1,16 @@
-# PyFMGUI
-
-WORK IN PROGRESS!!!
+**PyDyCoil**
 
 ## Introduction
-PyDycoil is an application for the analysis of Dynamics from High-speed Atomic force microscopy imaging data.
+PyDycoil is a Python-based analysis package for quantifying the local flexibility and dynamics of filamentous proteins (here, coiled-coil structures) from high-speed atomic force microscopy (HS-AFM) imaging data.
 
-The code for the following analysis are were written:
-- Local mechanics - through a 2D worm like chain model ftting.
-- Dynamics - Mean square differences in the end to end distance and tangent angles  
+The following analyses are implemented in the code:
+
+- Local felxibility - This involves aligning individual coiled coils, normalizing their contour lengths, computing persistence length via a 2D worm-like chain (WLC) fit, and averaging the results.
+
+- Dynamics - Analysis is performed by tracking time-resolved fluctuations of coiled coils end-to-end distance (R) and bending angle (θ), computing their mean square distances, and fitting them with equation for a homogeneous semiflexible filament to obtain effective persistence length, internal friction, and relaxation times, followed by averaging and rescaling across conformations.
+
+
+
 
 This code was developed as a part of the publication:
  

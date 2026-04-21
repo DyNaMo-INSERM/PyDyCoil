@@ -25,13 +25,15 @@ Installation??
 ## To Do
 - Generate documentation with examples and tutorials
 - what License
-## Acknowledgements
-This project has received funding by the ERC, HFSP, ATIP- AVENIR?
+
 
 ## Citation
-If you use PyDyCoil in your research, please cite us.
+If you use PyDyCoil in your research, please cite this repository.
 
-## Publications
-### Preprint:
+## Publications ⚠️
+### Preprint: 
+
+## Acknowledgements
+This project has received funding from the Human Frontier Science Program (HFSP, grant no. RGP0056/2018) and the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation program (grant no. 772257).
 
 

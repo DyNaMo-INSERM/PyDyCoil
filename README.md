@@ -22,14 +22,15 @@ So we can use for example, the interpolated cooridnates of two sets of data from
 
 
 
-## Citation
-If you use PyDyCoil in your research, please cite this repository.
 
-## Publications ⚠️
-### Preprint: 
+
 
 ## Acknowledgements
 This project has received funding from the Human Frontier Science Program (grant no. RGP0056/2018) and the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation program (grant no. 772257).
+## Publications ⚠️
+### Preprint: 
+## Citation
+If you use PyDyCoil in your research, please cite this repository.
 ## Contact
 If you have any suggestions, comments or encounter any issues, please write to us: yogesh.saravanan@inserm.fr, prithwidip@gmail.com or felix.rico@inserm.fr 
 

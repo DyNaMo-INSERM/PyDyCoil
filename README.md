@@ -1,4 +1,4 @@
-**PyDyCoil**
+# PyDyCoil
 
 ## Introduction
 PyDycoil is a Python-based analysis package for quantifying the local flexibility and dynamics of filamentous proteins (here, coiled-coil structures) from high-speed atomic force microscopy (HS-AFM) imaging data.

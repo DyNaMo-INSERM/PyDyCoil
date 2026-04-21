@@ -4,10 +4,9 @@
 PyDycoil is a Python-based analysis package for quantifying the local flexibility and dynamics of filamentous proteins (here, coiled-coil structures) from high-speed atomic force microscopy (HS-AFM) imaging data.
 Briefly, the following analyses are implemented in the scripts:
 - *Local felxibility*: This involves aligning individual coiled coils, normalizing their contour lengths, computing persistence length via a 2D worm-like chain (WLC) fit, and averaging the results.
+- *Dynamics*: This analysis involves tracking time-resolved fluctuations in coiled coils’ end-to-end distance (R) and bending angle (θ), computing mean-square displacements, and fitting them with an equation for a homogeneous semiflexible filament to extract effective persistence length, internal friction, and relaxation times, followed by averaging and rescaling across conformations.
 
-- *Dynamics*: Analysis is performed by tracking time-resolved fluctuations in coiled coils’ end-to-end distance (R) and bending angle (θ), computing mean-square displacements, and fitting them with an equation for a homogeneous semiflexible filament to extract effective persistence length, internal friction, and relaxation times, followed by averaging and rescaling across conformations.
-- 
-## How to Use
+## Installation
 
 
 This code was developed as a part of the publication:
@@ -30,9 +29,9 @@ Installation??
 This project has received funding by the ERC, HFSP, ATIP- AVENIR?
 
 ## Citation
-If you use PyDyCoil, please cite us.
+If you use PyDyCoil in your research, please cite us.
 
 ## Publications
-Preprint:
+### Preprint:
 
 

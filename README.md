@@ -6,17 +6,14 @@ Briefly, the following analyses are implemented in the scripts:
 - *Local flexibility*: This involves aligning individual coiled coils, normalizing their contour lengths, computing persistence length via a 2D worm-like chain (WLC) fit, and averaging the results.
 - *Dynamics*: This analysis involves tracking time-resolved fluctuations in coiled coils’ end-to-end distance (R) and bending angle (θ), computing mean-square displacements, and fitting them with an equation for a homogeneous semiflexible filament to extract effective persistence length, internal friction, and relaxation times, followed by averaging and rescaling across conformations.
 
-## Step-by-step guide ⚠️
+## Step-by-step guide
 ### Installation of python packages⚠️
-✅ Ideas
-
-This code was developed using: Python 3.10+  
-Required Python libraries:
-pandas (reading CSV files), numpy (numerical operations), scipy (curve fitting), matplotlib (plotting), seaborn (statistical visualization)
-
-Recommended installation:
-
-Install Anaconda (that includes both Python and Spyder IDE used in our case) and install the above packages if they are missing.
+- This code is compatible with Python 3.10 or higher 
+- Required Python libraries: pandas (reading CSV files), numpy (numerical operations), scipy (curve fitting), matplotlib (plotting), seaborn (statistical visualization)
+- Install Anaconda that includes Python, Spyder IDE (used in our case) and most libraries preinstalled. If any dependencies are not available in your environment, they can be installed using:
+```bash
+pip install pandas numpy scipy matplotlib seaborn
+```
 
 ### How to use ⚠️
 All the scripts are avilable in the folder XXX. For local felxibility analysis, open the following scripts XXX

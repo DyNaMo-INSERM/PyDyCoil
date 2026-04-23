@@ -26,7 +26,7 @@ Download all scripts in the folder named *scripts*, along with the example CSV f
 ## Acknowledgements
 This project has received funding from the Human Frontier Science Program (grant no. RGP0056/2018) and the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation program (grant no. 772257).
 ## Publications ⚠️
-Further information about data processing can be found here:
+Further information about data processing and analysis can be found here:
 ### Preprint: 
 ## Citation
 If you use PyDyCoil in your research, please cite this repository.

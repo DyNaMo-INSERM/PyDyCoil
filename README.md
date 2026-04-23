@@ -27,30 +27,7 @@ Input CSV files>>>>
 
 need to find out all the csv files as an input.
 
-in the fit_MSD_tau_new, the This script performs a complete analysis pipeline to quantify the dynamic and mechanical properties of filament trajectories using a worm-like chain (WLC) relaxation model. It begins by loading experimentally measured mean squared displacement (MSD) data from multiple filament configurations, including S, C, ring, braid, MRN, monomer, volume variants, and human mutant datasets, and groups trajectories based on individual file and filament labels. For each filament, the script fits the MSD as a function of time to a theoretical semiflexible polymer relaxation model in which the relaxation modes follow τ 
-n
-​	
- =τ 
-1
-​	
- /n 
-4
- , enabling extraction of the characteristic relaxation time (τ) and persistence length (l 
-p
-​	
- ). Using these fitted parameters along with the measured contour length (L), it calculates the effective friction coefficient (ζ) and characteristic fluctuation amplitude r 
-c
-​	
- =L 
-4
- /(90l 
-p
-2
-​	
- ). The script then rescales the raw MSD trajectories into dimensionless variables (t/τ and ΔR/r 
-c
-​	
- ) to enable direct comparison across datasets on a universal basis. In addition, it incorporates independently calculated local persistence length and curvature measurements to compute structural descriptors such as mean, median, minimum, maximum, and standard deviation for each filament. Finally, the pipeline generates summary statistics across experimental conditions, compares the modified τ-based fitting approach with the original ζ-based method, applies the same workflow to human mutant datasets, and produces final tables and plots for downstream analysis, comparison, and publication.
+in the fit_MSD_tau_new, the This script performs a complete analysis pipeline to quantify the dynamic and mechanical properties of filament trajectories using a worm-like chain (WLC) relaxation model. It begins by loading experimentally measured mean squared displacement (MSD) data from multiple filament configurations, including S, C, ring, braid, MRN, monomer, volume variants, and human mutant datasets, and groups trajectories based on individual file and filament labels. For each filament, the script fits the MSD as a function of time to a theoretical semiflexible polymer relaxation model in which the relaxation modes follow tau_n = tau_1 / n^4, enabling extraction of the characteristic relaxation time (tau) and persistence length (lp). Using these fitted parameters along with the measured contour length (L), it calculates the effective friction coefficient (zeta) and characteristic fluctuation amplitude r_c = L^4 / (90 * lp^2). The script then rescales the raw MSD trajectories into dimensionless variables (t/tau and delta_R/r_c) to enable direct comparison across datasets on a universal basis. In addition, it incorporates independently calculated local persistence length and curvature measurements to compute structural descriptors such as mean, median, minimum, maximum, and standard deviation for each filament. Finally, the pipeline generates summary statistics across experimental conditions, compares the modified tau-based fitting approach with the original zeta-based method, applies the same workflow to human mutant datasets, and produces final tables and plots for downstream analysis, comparison, and publication.
 
 
 

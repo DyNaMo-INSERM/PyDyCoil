@@ -10,38 +10,21 @@ Briefly, the following analyses are implemented in the scripts:
 ### Installation
 - The scripts are compatible with Python 3.10 or higher 
 - Required Python libraries: pandas (reading CSV files), numpy (numerical operations), scipy (curve fitting), matplotlib (plotting), seaborn (statistical visualization)
-- Install Anaconda distribution that includes Python, Spyder IDE (used in our paper) and most libraries preinstalled. If any dependencies are missing in your environment, they can be installed using:
+- Install Anaconda distribution that includes Python, Spyder IDE (used in our paper) and most libraries preinstalled. If any dependencies are missing in your environment, they can be installed using, for example:
 ```bash
 pip install pandas numpy scipy matplotlib seaborn
 ```
+Download all scripts in the folder named scripts, along with the example CSV files provided in the example directory, in order to run the analysis locally on your computer. The example datasets contain interpolated coordinates from two filament trajectories in the S configuration and are intended to demonstrate the expected input format and workflow.
+
+
+<span style="color:gray">
+This text will appear in grey (if the renderer allows inline HTML).
+</span>
+
 ### How to use ⚠️
-All the scripts are avilable in the folder XXX. For local felxibility analysis, open the following scripts XXX
 
-The csv files are provided in the folder XXXX. Currently, chnage the file path to XXX where the csv file exsits on your computer. 
-
-Input CSV files>>>>
-
-need to find out all the csv files as an input.
-
-in the fit_MSD_tau_new, the filament trajectories using a worm-like chain (WLC) relaxation model. It begins by loading experimentally measured mean squared displacement (MSD) data from multiple filament configurations, including S, C, ring, braid, MRN, monomer, volume variants, and human mutant datasets, and groups trajectories based on individual file and filament labels. For each filament, the script fits the MSD as a function of time to a theoretical semiflexible polymer relaxation model in which the relaxation modes follow $\tau_n = \tau_1/n^4$, enabling extraction of the characteristic relaxation time ($\tau$) and persistence length ($l_p$). Using these fitted parameters together with the measured contour length ($L$), it calculates the effective friction coefficient ($\zeta$) and the characteristic fluctuation amplitude given by $r_c = \frac{L^4}{90l_p^2}$. The script then rescales the raw MSD trajectories into dimensionless variables ($t/\tau$ and $\Delta R/r_c$) to enable direct comparison across datasets on a universal basis. In addition, it incorporates independently calculated local persistence length and curvature measurements to compute structural descriptors such as mean, median, minimum, maximum, and standard deviation for each filament. Finally, the pipeline generates summary statistics across experimental conditions, compares the modified $\tau$-based fitting approach with the original $\zeta$-based method, applies the same workflow to human mutant datasets, and produces final tables and plots for downstream analysis, comparison, and publication.
-
-
-
-
-So we can use for example, the interpolated cooridnates of two sets of data from S configuration. 
-
-
-
-
-
-
-
-
-
-
-
-
-
+1. Local flexibility analysis: use the same script consatnt.py and the other XXX.  as an input, Chnage the file path to XXX where the csv file exsits on your computer. 
+2. Dynamics analysis: In the script 'fit_MSD_tau_new', the filament trajectories using a worm-like chain (WLC) relaxation model. It begins by loading experimentally measured mean squared displacement (MSD) data from multiple filament configurations, including S, C, ring, braid, MRN, monomer, volume variants, and human mutant datasets, and groups trajectories based on individual file and filament labels. For each filament, the script fits the MSD as a function of time to a theoretical semiflexible polymer relaxation model in which the relaxation modes follow $\tau_n = \tau_1/n^4$, enabling extraction of the characteristic relaxation time ($\tau$) and persistence length ($l_p$). Using these fitted parameters together with the measured contour length ($L$), it calculates the effective friction coefficient ($\zeta$) and the characteristic fluctuation amplitude given by $r_c = \frac{L^4}{90l_p^2}$. The script then rescales the raw MSD trajectories into dimensionless variables ($t/\tau$ and $\Delta R/r_c$) to enable direct comparison across datasets on a universal basis. In addition, it incorporates independently calculated local persistence length and curvature measurements to compute structural descriptors such as mean, median, minimum, maximum, and standard deviation for each filament. Finally, the pipeline generates summary statistics across experimental conditions, compares the modified $\tau$-based fitting approach with the original $\zeta$-based method, applies the same workflow to human mutant datasets, and produces final tables and plots for downstream analysis, comparison, and publication.
 
 
 ## Acknowledgements

@@ -10,7 +10,7 @@ Briefly, the following analyses are implemented in the scripts:
 ### Installation
 - The scripts are compatible with Python 3.10 or higher 
 - Required Python libraries: pandas (reading CSV files), numpy (numerical operations), scipy (curve fitting), matplotlib (plotting), seaborn (statistical visualization)
-- Install Anaconda distribution that includes Python, Spyder IDE (used in our paper) and most libraries preinstalled. If any dependencies are missing in your environment, they can be installed using, for example:
+- Install Anaconda distribution that includes Python, Spyder IDE (used in our paper) and most libraries preinstalled. If any dependencies are missing in your virtual environment, they can be installed using, for example:
 ```bash
 pip install pandas numpy scipy matplotlib seaborn
 ```
@@ -26,6 +26,7 @@ Download all scripts in the folder named *scripts*, along with the example CSV f
 ## Acknowledgements
 This project has received funding from the Human Frontier Science Program (grant no. RGP0056/2018) and the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation program (grant no. 772257).
 ## Publications ⚠️
+Further information about data processing can be found here:
 ### Preprint: 
 ## Citation
 If you use PyDyCoil in your research, please cite this repository.

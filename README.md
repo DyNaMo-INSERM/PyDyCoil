@@ -14,12 +14,10 @@ Briefly, the following analyses are implemented in the scripts:
 ```bash
 pip install pandas numpy scipy matplotlib seaborn
 ```
-Download all scripts in the folder named scripts, along with the example CSV files provided in the example directory, in order to run the analysis locally on your computer. The example datasets contain interpolated coordinates from two filament trajectories in the S configuration and are intended to demonstrate the expected input format and workflow.
+Download all scripts in the folder named *scripts*, along with the example CSV files provided in the *example* folder, to run the analysis workflow locally on your computer. The example datasets are interpolated coordinates from coiled coil's trajectory in the S configuration.
 
 
-<span style="color:gray">
-This text will appear in grey (if the renderer allows inline HTML).
-</span>
+
 
 ### How to use ⚠️
 

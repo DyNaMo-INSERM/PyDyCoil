@@ -5,10 +5,11 @@ Created on Fri Apr  5 10:35:27 2024
 
 @author: yogehs
 """
-
+import matplotlib.colors as mcolors
+import colorsys
+from scipy.optimize import curve_fit
 import posixpath  # to generate unix paths
 from pathlib2 import PurePath, PureWindowsPath, PurePosixPath
-
 import re
 from pyqtgraph.Qt import  QtCore
 import pyqtgraph as pg
@@ -76,7 +77,6 @@ def find_MSD_metric(df_rdf):
     #df_msd["MSD_arr"] = df_msd['MSD_arr'].astype(object)
     #df_msd["ang_MSD_arr"] = df_msd['ang_MSD_arr'].astype(object)
 
-
     uni_arc_L = df_rdf['avg_arc_L'].unique()
     fil_labels = ['fil1','fil2']
     file_label_temp =df_rdf['file_label'][0]
@@ -86,13 +86,17 @@ def find_MSD_metric(df_rdf):
             mask_iso = (df_rdf['avg_arc_L']== la) & (df_rdf['fil_label']== fl)
             df_rdf_iso_arc = df_rdf[mask_iso ]
             end_end_dist_iso = df_rdf_iso_arc['end_end_dist'].to_numpy()
-            tan_ang_iso =         df_rdf_iso_arc['tangential_angle_rad'].to_numpy()
             L_p_arr =         df_rdf_iso_arc['L_p'].to_numpy()
-            bend_ang_iso =         df_rdf_iso_arc['bend_angle_deg'].to_numpy()
             
             L_p_R_sq_arr =         df_rdf_iso_arc['L_p_Rsq'].to_numpy()
-            angle_wrt_r_iso = df_rdf_iso_arc['angle_wrt_r'].to_numpy()
             
+            
+            tan_ang_iso =         df_rdf_iso_arc['tangential_angle_deg'].to_numpy()
+            bend_ang_iso =         df_rdf_iso_arc['bend_angle_deg'].to_numpy()
+
+            angle_wrt_mid_iso = df_rdf_iso_arc['angle_wrt_mid_deg'].to_numpy()
+            angle_wrt_r_iso = df_rdf_iso_arc['angle_wrt_r_deg'].to_numpy()
+
             
             N_2 = int(len(L_p_arr)*0.5)
 
@@ -108,6 +112,7 @@ def find_MSD_metric(df_rdf):
                 tan_ang_deviation =  tan_ang_iso[i:] - tan_ang_iso[:-i]
                 bend_ang_deviation =       bend_ang_iso[i:] - bend_ang_iso[:-i]
                 angle_wrt_r_deviation =       angle_wrt_r_iso[i:] - angle_wrt_r_iso[:-i]
+                angle_wrt_mid_deviation =       angle_wrt_mid_iso[i:] - angle_wrt_mid_iso[:-i]
 
                 L_p_deviation = L_p_arr[i:] - L_p_arr[:-i]
 
@@ -128,6 +133,10 @@ def find_MSD_metric(df_rdf):
                 angle_wrt_r_deviation_2 = np.round(angle_wrt_r_deviation_2,4)
                 ang_wrt_r_MSD = np.mean(angle_wrt_r_deviation_2);std_ang_wrt_r_MSD = (np.std(angle_wrt_r_deviation_2)/np.sqrt(len(angle_wrt_r_deviation_2)-1))
 
+
+                angle_wrt_mid_deviation_2= (angle_wrt_mid_deviation**2).astype(float)
+                angle_wrt_mid_deviation_2 = np.round(angle_wrt_mid_deviation_2,4)
+                ang_wrt_mid_MSD = np.mean(angle_wrt_mid_deviation_2);std_ang_wrt_mid_MSD = (np.std(angle_wrt_mid_deviation_2)/np.sqrt(len(angle_wrt_mid_deviation_2)-1))
 
                 L_p_deviation_2 = (L_p_deviation**2).astype(float)
                 L_p_deviation_2 = np.round(L_p_deviation_2,4)
@@ -191,9 +200,14 @@ def find_MSD_metric(df_rdf):
                 df_msd.loc[N_df,'tan_ang_MSD_norm']  = tan_ang_MSD/L_p_temp
                 df_msd.loc[N_df,'std_tan_ang_MSD']  = np.std(tan_ang_deviation_2)
                 
-                 #tangential angle MSD 
+                 
+                #wRT to R  angle MSD 
                 df_msd.loc[N_df,'ang_wrt_r_MSD']  = ang_wrt_r_MSD;df_msd.loc[N_df,'std_norm_ang_wrt_r_MSD']  =     std_ang_wrt_r_MSD
                 df_msd.loc[N_df,'std_ang_wrt_r_MSD']  = np.std(angle_wrt_r_deviation_2)
+                
+                #WRT to mid segment  angle MSD 
+                df_msd.loc[N_df,'ang_wrt_mid_MSD']  = ang_wrt_mid_MSD;df_msd.loc[N_df,'std_norm_ang_wrt_mid_MSD']  =     std_ang_wrt_mid_MSD
+                df_msd.loc[N_df,'std_ang_wrt_mid_MSD']  = np.std(ang_wrt_mid_MSD)
                 
                 
                 #LP MSD 
@@ -498,3 +512,283 @@ def get_arrays_rgn(N=11):
     rgn2 = np.array(rgn2)
 
     return(rgn1,rgn2)
+
+def do_LP_colred_SEM(df_mask_conf, norm_s_name='avg_arc_l_win_fil_1', ax_passed=None, bool_file_by_file=False, name=None, plt_dict=None):
+
+    if plt_dict is not None:
+        plt.rcParams.update(plt_dict)
+
+    df_mask_conf.sort_values(by=norm_s_name, inplace=True, ignore_index=True)
+    gp_num = df_mask_conf.groupby(by=['file_label'])
+    N_frame_total = gp_num['frame_numer'].agg(['max']).sum()[0]
+    N_file_unique = len(df_mask_conf['file_label'].unique())
+    file_label = df_mask_conf['file_label'].to_numpy()[0]
+    grouped = df_mask_conf.groupby(by=[norm_s_name])
+
+    df_mean_std = grouped['L_p'].agg(['mean', 'std', 'sem'])
+
+    df_mean_std['sem_YS'] = df_mean_std['std']/np.sqrt(N_frame_total)
+    df_mean_std['sem_YS_num_file'] = df_mean_std['std']/np.sqrt(N_file_unique)
+
+    error_sem = df_mean_std['sem_YS_num_file'].to_numpy()
+    x = df_mean_std.index.to_numpy()
+    y = df_mean_std['mean'].to_numpy()
+    if name[0] == 'm':
+        x = x/2
+
+    if ax_passed is None:
+        plt.figure()
+        ax = plt.gca()
+        print(name, name[0])
+        plt.title(name[0])
+    else:
+        ax = ax_passed
+    if name[0] in ['x', 'open', 'closed', 'parallel']:
+        x = 1-x
+
+    color_i = color_saha_configs_hex[name[0]]
+
+    ax.plot(x, y, 'k-', color=color_i, linewidth=4.5, zorder=2)
+    ax.fill_between(x, y-error_sem, y+error_sem,
+                    alpha=0.3, color=color_i, zorder=2)
+    ax.set_ylim(L_p_min_lt, L_p_max_lt)
+    ax.set_xlim(-0.05, 1.05)
+    ax.xaxis.set_major_locator(FixedLocator([0, 0.25, 0.5, 0.75, 1]))
+
+    ax.yaxis.set_major_locator(FixedLocator([20, 40, 60, 80, 100]))
+
+    # Minor ticks every 2 units
+    ax.yaxis.set_minor_locator(MultipleLocator(10))
+
+    # ax.set_xlabel(f'{norm_s_name} ')
+    if bool_file_by_file:
+
+        gp_num = df_mask_conf.groupby(by=['file_label'])
+        for filename, df_mask_conf_open in gp_num:
+            print(name)
+            grouped_file = df_mask_conf_open.groupby(by=[norm_s_name])
+
+            df_mean_std = grouped_file['L_p'].agg(['mean', 'std', 'sem'])
+            max_arc = grouped_file['max_arc_l'].agg(['mean', 'std', 'sem'])
+
+            df_mean_std['sem_YS'] = df_mean_std['std'] / \
+                np.sqrt(gp_num['frame_numer'].agg(['max']).sum()[0])
+            error_sem = df_mean_std['sem_YS'].to_numpy()
+            x = df_mean_std.index.to_numpy()
+            y = df_mean_std['mean'].to_numpy()
+
+            x = df_mean_std.index.to_numpy()
+            y = df_mean_std['mean'].to_numpy()
+            color_i = color_saha_configs_hex[name[0]]
+
+            ax.plot(x, y, 'k-', linewidth=4.5, zorder=1)
+            ax.fill_between(x, y-error_sem, y+error_sem, alpha=0.3)
+
+def tau_sum(L, lp, zeta, max_n=15):
+    sum_term = 0
+    for n in range(1, max_n + 1):
+        tau_n = (zeta / (2 * kbT * lp)) * (L / (n * np.pi)) ** 4
+
+        # sum_term += (1 - np.exp(-t / tau_n)) / (n * np.pi) ** 4
+
+
+
+def delta_R(t, zeta, lp, L, max_n=15):
+    sum_term = 0
+    for n in range(1, max_n + 1):
+        tau_n = (zeta / (2 * kbT * lp)) * (L / (n * np.pi)) ** 4
+        sum_term += (1 - np.exp(-t / tau_n)) / (n * np.pi) ** 4
+    return (L**4 / lp**2) * sum_term
+
+def delta_R_tau(t, tau1, lp, L, max_n=15):
+    sum_term = 0
+    for n in range(1, max_n + 1):
+        # tau_n = (zeta / (2 * kbT * lp)) * (L / (n * np.pi)) ** 4
+        tau_n = tau1/n**4
+        sum_term += (1 - np.exp(-t / tau_n)) / (n * np.pi) ** 4
+    return (L**4 / lp**2) * sum_term
+
+
+def delta_R_fit(t, zeta, lp,  L):
+    return delta_R(t, zeta, lp, L)
+
+
+def delta_R_tau_fit(t, tau1, lp, L):
+    return delta_R_tau(t, tau1, lp, L)
+
+
+def fit_func_delta_L(df_all, monomer_bool=False, label_flip=False):
+    '''
+
+    this function fits for L_p and zeta for 100 tersm the L is passed as from the iamge  
+
+    Parameters
+    ----------
+    df_all : data frame of file 1 and 2 for a given cofig
+    Returns
+    -------
+    df_fit : TYPE
+        DESCRIPTION.
+
+    '''
+    df_fit = pd.DataFrame()
+
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(6, 6))
+    if monomer_bool:
+        n_fil = 1
+    else:
+        n_fil = 2
+    for i in range(n_fil):
+        fl = f"fil{i+1}"
+        mask = df_all['fil_label'] == fl
+        df = df_all[mask]
+        if len(df) > 1:
+
+            t_data = df['deltaT_s'].to_numpy()
+
+            MSD_R = df['MSD'].to_numpy()
+            MSD_R_std = df['std_MSD'].to_numpy()
+            N = len(MSD_R)
+            N_arr = np.flip(np.arange(1, N+1))
+
+            MSD_R_sem = MSD_R_std/np.sqrt(N_arr)
+            weights = np.exp(-np.linspace(0, 5, N))  # decays from 1 to ~0.0067
+            file_label = df['file_label'].to_numpy()[0]
+            fil_label = df['fil_label'].to_numpy()[0]
+            i_fil = int(fil_label[-1])-1
+            avg_arc_L = df['avg_arc_L'].to_numpy()[0]
+            L_seg = df['L_seg'].to_numpy()[0]
+
+            mean_l_p = df['mean_l_p'].to_numpy()[0]
+
+            L_p_arr_forward = df['l_p_i'].to_numpy()
+            L_p_rev_arr = df['l_p_rev_i'].to_numpy()
+            L_p_arr = np.concatenate((L_p_arr_forward, L_p_rev_arr))
+            L_p_mean = np.mean(L_p_arr)
+            marker_arr = ['o', 'x']
+            color_arr = ['tab:blue', 'tab:orange']
+            # Initial guesses for L, lp, zeta, kappa
+            initial_guess = [5, 60]
+
+            params, covariance = curve_fit(
+                lambda t, tau, lp: delta_R_tau_fit(t, tau, lp, L_seg),
+                t_data,
+                MSD_R,
+                p0=initial_guess,
+                bounds=([min(t_data), 0.1], [max(t_data), 100]),
+                sigma=MSD_R_sem[:],
+                absolute_sigma=True
+            )
+    
+
+            tau_fitted, lp_fitted = params
+            L_fitted = L_seg
+            zeta_fitted = (tau_fitted * 2 * kbT * lp_fitted *
+                           (np.pi) ** 4) / L_fitted**4
+
+            r_c_temp = 1.0 / ((90*lp_fitted**2) * (1.0/L_fitted)**4)
+
+            temp_arr = [file_label, file_label[0],
+                        fil_label, avg_arc_L, L_fitted, lp_fitted, zeta_fitted, mean_l_p,
+                        tau_fitted, r_c_temp]
+
+
+            axs.set_title(f"{file_label}_MSD")
+            axs.errorbar((t_data), MSD_R, yerr=MSD_R_sem, marker=marker_arr[i_fil],
+                            color=color_arr[i], capsize=2, fmt='o')
+
+            axs.plot(t_data, delta_R_tau(t_data,  tau_fitted, lp_fitted, L_fitted),
+                        label=f'{i+1}_tau_{tau_fitted:.2f}_L_p_{lp_fitted:.2f}_zeta_{zeta_fitted:.2f}', color=color_arr[i])
+            axs.set_xlabel('Time (s)')
+            axs.set_ylabel('MSD  R')
+            axs.set_xscale('log')
+            axs.set_yscale('log')
+            axs.set_ylim((y_min), (y_max))
+            axs.set_xlim((0), (80))
+            axs.legend(frameon=False)
+
+ 
+            df_dict = pd.DataFrame([dict(zip(fit_l_p_header, temp_arr))])
+
+            df_fit = pd.concat([df_fit, df_dict], ignore_index=True)
+
+
+    return df_fit
+def renormalize_msd(df_all_2,df_fit_2):
+
+    df_renorm_2 = pd.DataFrame()
+    file_labels = df_fit_2['file_label'].unique()
+    fil_labels = ['fil1', 'fil2']
+
+    for fl in file_labels:
+        if fl[0] == 'm':
+
+            fil_labels = ['fil1']
+        else:
+            fil_labels = ['fil1', 'fil2']
+
+        for fil in fil_labels:
+
+            row = df_fit_2.query(
+                f"file_label == '{fl}' and fil_label == '{fil}'")
+            mask = (df_all_2['file_label'] == fl) & (
+                df_all_2['fil_label'] == fil)
+            L_p = row['L_P_fitted'].to_numpy()[0]
+            L = row['L_fitted'].to_numpy()[0]
+            zeta = row['zeta_fitted'].to_numpy()[0]
+            tau = row['tau_fitted'].to_numpy()[0]
+
+            df_temp = df_all_2[mask]
+
+            r_c_temp = 1.0 / ((90*L_p**2) * (1.0/L)**4)
+
+            tau_FR = (zeta/(2*kbT*L_p)) * pow((L/np.pi), 4)
+
+            r_c_FR = pow(L, 4)/(90*pow(L_p, 2))
+            print(f"rc in loop :{row.iloc[0]['r_c']},{r_c_temp}")
+
+            df_temp['dt_norm_indi_fit'] = df_temp['deltaT_s']/tau
+
+            df_temp['dR_norm_indi_fit'] = df_temp['MSD'] / r_c_temp
+
+            df_temp['L_fitted'] = L
+            df_temp['L_p_fitted'] = L_p
+            df_temp['zeta_fitted'] = zeta
+            df_temp['tau_c'] = tau
+            df_temp['tau_c_inv'] = 1/tau
+            df_renorm_2 = pd.concat([df_renorm_2, df_temp], ignore_index=True)
+    return df_renorm_2
+
+
+def hex_to_hsl(hex_color):
+    rgb = mcolors.to_rgb(hex_color)  # Ignores any alpha channel
+    return colorsys.rgb_to_hls(*rgb)
+
+
+def hsl_to_rgba(h, l, s, alpha=1.0):
+    """Convert HLS + alpha to RGBA"""
+    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    return (r, g, b, alpha)
+
+def generate_lightness_and_transparency_variations(hex_color, num_colors=5,
+                                                   min_lightness=0.2, max_lightness=0.8,
+                                                   min_alpha=0.5, max_alpha=1.0):
+    h, l, s = hex_to_hsl(hex_color)
+
+    if num_colors == 1:
+        lightness_values = [(min_lightness + max_lightness) / 2]
+        alpha_values = [(min_alpha + max_alpha) / 2]
+    else:
+        lightness_values = [
+            min_lightness + (max_lightness - min_lightness) *
+            i / (num_colors - 1)
+            for i in range(num_colors)
+        ]
+        alpha_values = [
+            min_alpha + (max_alpha - min_alpha) * i / (num_colors - 1)
+            for i in range(num_colors)
+        ]
+
+    colors = [hsl_to_rgba(h, l_new, s, a_new)
+              for l_new, a_new in zip(lightness_values, alpha_values)]
+    return colors

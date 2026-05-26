@@ -14,332 +14,27 @@ import pandas as pd
 import numpy as np 
 import matplotlib.pyplot as plt 
 import seaborn as sns
-from scipy.optimize import curve_fit
-
-
-from scipy.stats import norm
-
-#from class_fil import Filament
+from class_fil import Filament
 from utils import *
 from constants import *
 from PIL import Image
 from PIL.TiffTags import TAGS
 import copy
+from colorama import Fore, Style
 from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QPushButton,QFileDialog
 
 
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
 
-class Filament():
-    '''
-    defining stuff for a single filament, at a given time
-    
-    i.e. one csv file output 
-    
-    pass the file path for the csv file 
-    
-    '''
-    def __init__(self,file_path,num_segs=10,flip_corrd = False):
-        self.file_path = file_path
-        #self.slice_num = slice_num
-        
-        #resolution loaded from tiff file, px/nm
-        #self.resolution = img_res
-        self.num_segs = num_segs
-        #unit in nm 
-        self.X =[];self.Y =[]
-        self.X_c =[];self.Y_c =[]
-        self.flip_corrd =flip_corrd 
-        #array of (x,y) positions 
-        self.vector_arr =[]
-        
-        #point curvature 
-        self.pt_curv = [];self.smooth_pt_curv =[]
-        self.pt_curv_ys=[] ;self.smooth_pt_curv_ys=[]        
 
-        self.mean_curv_seg = np.zeros(num_segs);self.std_curv_seg = np.zeros(num_segs)
-        self.mean_curv_ys_seg = np.zeros(num_segs);self.std_curv_ys_seg = np.zeros(num_segs)
-        
-        #the bending angle from scaling the curvature with arc len in degress 
-        #w.r.t x axis and in degress
-        self.bending_ang_seg =np.zeros(num_segs)
-        self.bending_ang_fil = 0
-        
-        #tangential angle w.r.t x axis from the derivative array
-        
-        self.tan_angle_arr = 0
-        #arc lenght 
-        self.arc_l = [0];
-        
-        self.arc_l_norm = [] #normalised within a frame 
-        self.arc_l_norm_folder = [] #normalised withing a folder 
-        
-        self.max_arc_l = 0
-        self.max_max_arc_l_folder = 0 # maximum of of the max arc l in all folders
-        self.mean_arc_l_seg = np.zeros(num_segs)
-        self.arc_l_seg = np.zeros(num_segs)
-        #square of the dist 
-        self.end_to_end_dist_2_raw =[0]
-        self.end_to_end_dist_2_seg =np.zeros(num_segs)
-        
-        
-        #window for moving arc lenght (normalised)
-        self.arc_win_A = 0 ; self.arc_win_B = 1
-        self.mask_win = []
-        #binnin the filament 
-        self.bin_edges = []
-        #persistence_len
-        self.L_p = 0;self.L_p_std = 0
-        self.L_p_R_sq = 0;self.L_p_dist = 0
-        #bending energy in units of KbT
-        self.E_bend_arr = np.zeros(num_segs);self.E_bend_fil = 0
-        #o_p dataframe
-        self.df_output = pd.DataFrame()
-    def init_frame_params(self):
-      
-        #array of (x,y) positions 
-        self.vector_arr =[]
-        
-        #point curvature 
-        
-        #arc lenght 
-        self.arc_l = [0];
-    
-        self.arc_l_norm = [] #normalised within a frame 
-        self.arc_l_norm_folder = [] #normalised withing a folder 
-        
-        self.end_to_end_dist_2_raw =[]
-  
-
-        
-    def read_data(self):
-        df_kapp = pd.read_csv(self.file_path)
-        
-        self.df_output = pd.DataFrame(columns=df_kapp.columns)
-        #self.find_bin_edges()
-
-        self.pt_curv=df_kapp["Point Curvature (um-1)"].multiply( df_kapp["Point Curvature Sign"])
-        self.pt_curv *= 0.001
-        self.pt_curv = np.array(self.pt_curv)
-        temp ,self.smooth_pt_curv = Rollavg(self.pt_curv,len(self.pt_curv),mode_roll)
-
-
-        self.X = df_kapp['X-Coordinate (um)']
-        self.Y = df_kapp['Y-Coordinate (um)']
-        self.X *= 1000 ;  self.Y *=1000
-        self.X= np.array(self.X);self.Y= np.array(self.Y)
-        
-        if self.flip_corrd :
-            print("flipping cord")
-            self.X = self.X[::-1]
-            self.Y = self.Y[::-1]
-
-        self.mask_win = np.array([True]*len(self.X))
-        self.centering_X_Y()
-    def centering_X_Y(self):
-        #make edge 1 at 0,0
-        
-        xx = self.X- self.X[0]
-        yy = self.Y- self.Y[0]
-        #vectorise the Edge 1 and edge 2 
-        
-        V = np.array([xx[-1]-xx[0],yy[-1]-yy[0]])
-        #find theta 
-        self.theta_orient =np.angle(V[0]+1j *V[1])
-        #define the roation matrix for this theta 
-        rotMatrix = np.array([[np.cos(self.theta_orient), np.sin(self.theta_orient)], 
-                                 [-np.sin(self.theta_orient),  np.cos(self.theta_orient)]])
-        for i in range(len(xx)):
-            temp = rotMatrix.dot(np.array([xx[i],yy[i]]))
-            self.X_c.append(temp[0]);self.Y_c.append(temp[1])
-        self.X_c = np.array(self.X_c);self.Y_c = np.array(self.Y_c)
-    def load_data(self):
-        self.read_data()
-        self.prep_data()
-        self.custom_curvature()
-    def custom_curvature(self):
-    
-        dx_dt = np.gradient(self.X_c)
-        dy_dt = np.gradient(self.Y_c)
-        
-        dx_dt_raw = np.gradient(self.X)
-        dy_dt_raw = np.gradient(self.Y)
-        
-        self.tan_angle_arr = np.arctan2(dy_dt,dx_dt)
-        ds_dt = np.sqrt(dx_dt * dx_dt + dy_dt * dy_dt)
-        d2s_dt2 = np.gradient(ds_dt)
-        d2x_dt2 = np.gradient(dx_dt)
-        d2y_dt2 = np.gradient(dy_dt)
-    
-        self.pt_curv_ys = (d2x_dt2 * dy_dt - dx_dt * d2y_dt2)/ (dx_dt**2 + dy_dt**2)**1.5
-
-    def prep_data(self):
-        '''vetorise hte coordinates
-        find the arc length 
-        find the bin edges 
-        find end to end distance raw'''
-        self.vector_arr =[]
-        for i in range(len(self.X)):
-            #self.vector_arr.append(np.array([self.X[i],self.Y[i]]))
-            self.vector_arr.append(np.array([self.X_c[i],self.Y_c[i]]))
-
-        self.find_arc_L()        
-        self.find_bin_edges()
-
-        self.find_end_end_dist_raw()
-        self.fit_L_p()
-        self.dist_L_P()
-        self.find_avg_cruvature()
-    def mask_data(self):
-        self.X= self.X[self.mask_win];self.Y= self.Y[self.mask_win]
-        self.X_c= self.X_c[self.mask_win];self.Y_c= self.Y_c[self.mask_win]
-
-        self.pt_curv = self.pt_curv[self.mask_win]
-        
-        self.vector_arr =[]
-
-        for i in range(len(self.pt_curv)):
-            #self.vector_arr.append(np.array([self.X[i],self.Y[i]]))
-            self.vector_arr.append(np.array([self.X_c[i],self.Y_c[i]]))
-
-        self.arc_l = self.arc_l[self.mask_win] ;self.arc_l_norm = self.arc_l_norm [self.mask_win]
-        #self.max_arc_l = self.arc_l[-1]-self.arc_l[0]
-        #self.arc_l = self.arc_l[self.mask_win] -self.arc_l[self.mask_win][0]
-        #self.arc_l_norm = self.arc_l_norm [self.mask_win]-self.arc_l_norm [self.mask_win][0]
-
-        #self.find_arc_L()
-        self.find_bin_edges()
-        self.find_end_end_dist_raw()
-        #self.fit_L_p()
-        self.find_avg_cruvature()
-
-
-    def find_bin_edges(self):
-        self.bin_edges =[]
-        #print(min(self.arc_l_norm),max(self.arc_l_norm))
-        bins_temp = np.linspace(min(self.arc_l_norm),max(self.arc_l_norm),self.num_segs+1)
-
-        for i in range(self.num_segs):
-            self.bin_edges.append((bins_temp[i],bins_temp[i+1]))
-            
-            
-    def fit_L_p(self):
-        #arc_l_win = self.max_arc_l*(self.arc_l_norm-self.arc_l_norm[0])
-        
-        arc_l_win_seg = self.arc_l_seg
-        #pars, cov = curve_fit(self.wlc_LP_fit,arc_l_win ,self.end_to_end_dist_2_raw,p0 =[20])
-        pars, cov = curve_fit(self.wlc_LP_fit,arc_l_win_seg ,self.end_to_end_dist_2_seg,p0 =[2])
-
-        stdevs = np.sqrt(np.diag(cov))
-        #print("fit parameters : ",pars,"  ",stdevs)
-        self.L_p =np.round(pars[0],3) ;self.L_p_std = stdevs
-        end_end_dist_2_fit = self.wlc_LP_fit(arc_l_win_seg,self.L_p)
-
-        # residual sum of squares
-        ss_res = np.sum((self.end_to_end_dist_2_seg - end_end_dist_2_fit) ** 2)
-        
-        # total sum of squares
-        ss_tot = np.sum((self.end_to_end_dist_2_seg - np.mean(self.end_to_end_dist_2_seg)) ** 2)
-        
-        # r-squared
-        self.L_p_R_sq =np.round( 1 - (ss_res / ss_tot),3)
-        self.dist_L_P()
-        #print(avg_arcl_1_arr)
-        
-    def dist_L_P(self):
-        '''
-        in this module I will find the LP from the distribution of hte curvature 
-        '''
-        mean_fit,std_fit=norm.fit(self.pt_curv-np.mean(self.pt_curv))
-        self.L_p_dist =np.round(1.0/(std_fit**2),3)
-
-    def wlc_LP_fit(self,L,L_p):
-        end_end_dist_2 = 4*L*L_p  - 8*(L_p**2)*(1-np.exp(-L/(2*L_p)))
-        return end_end_dist_2
-    
-    
-    def find_E_bend(self):
-        '''
-        calculated in the unites of KbT, felxural rigidity = L_p * KBT 
-        E_bend = k_f  * segment length * avg_curvatrue**2/(2)
-        '''
-        segment_len= np.array([0]+list(self.arc_l_seg))
-        segment_len = segment_len[1:] - segment_len[:-1]
-        for i in range(self.num_segs):
-
-            self.E_bend_arr[i] = 0.5* self.L_p* segment_len[i] * (self.mean_curv_seg[i]**2)
-        self.E_bend_fil = np.round(np.sum(self.E_bend_arr),4)
-        #self.E_bend_fil = 0.5* self.L_p* (self.arc_l_seg[-1]-self.arc_l_seg[0]) * (np.mean(self.pt_curv_ys)**2)
-
-    def find_end_end_dist_raw(self):
-
-        self.end_to_end_dist_2_raw =[]
-        pt_a = self.vector_arr[0]
-
-        N = len(self.vector_arr)
-        for i in range(N):
-            pt_b= self.vector_arr[i]
-            end_to_end_dist_a_b = np.linalg.norm(pt_a-pt_b)
-
-            self.end_to_end_dist_2_raw.append(end_to_end_dist_a_b**2)
-        self.end_to_end_dist_2_raw = np.array(self.end_to_end_dist_2_raw)
-
-
-    def find_avg_cruvature(self):
-        '''
-        finds and assings the follwoing 
-        - avg curvature for all  segment in a filament
-        - STD curvature for all  segment in a filament 
-        - average arc lenght for all  segment in a filament
-        -finds the overall bend angle of the filament w.r.t x axis 
-        - bend angle of each segment w.r.t x axis 
-        '''
-        dL = self.arc_l[-1]- self.arc_l[0]
-        self.bending_ang_fil = np.rad2deg(dL*np.mean(self.pt_curv))
-        
-        le_0 ,he_0 = self.bin_edges[0]
-        for i in range(self.num_segs):
-
-           le,he = self.bin_edges[i]
-           bin_mask = (le<=self.arc_l_norm) & (self.arc_l_norm<he)
-           temp_curv_1 = self.pt_curv[bin_mask] 
-           temp_end_end_dist = self.end_to_end_dist_2_raw[bin_mask]
-           #print(temp_end_end_dist)
-           self.mean_arc_l_seg[i] = (le+he)*0.5
-           self.arc_l_seg[i] = (he-le_0)*self.max_arc_l
-
-           self.end_to_end_dist_2_seg[i] = temp_end_end_dist[-1]
-           self.mean_curv_seg[i] = np.mean(temp_curv_1) 
-           self.std_curv_seg[i] = np.std(temp_curv_1) 
-           self.bending_ang_seg[i] = np.rad2deg(self.arc_l_seg[i]*np.mean(temp_curv_1) )
-
-        #self.find_E_bend()
-    def find_arc_L(self):
-        self.arc_l = [];self.arc_l_norm = []
-
-        arc_l_pre_sum = []
-        for i in range(len(self.vector_arr)-1):
-            arc_l_pre_sum.append(np.linalg.norm(self.vector_arr[i+1]-self.vector_arr[i]))
-            
-        for j in range(len(arc_l_pre_sum)):
-            self.arc_l.append(np.sum(arc_l_pre_sum[:j]))
-        self.arc_l.append(np.sum(arc_l_pre_sum[:]))
-            
-        self.arc_l = np.array(self.arc_l)
-        self.arc_l_norm  = np.array(self.arc_l/np.max(self.arc_l))
-        self.max_arc_l = np.max(self.arc_l)
-     
-    def cal_flex_rigid(self,segment_len):
-        
-        self.flex_rigid = (2*k_bT_nm)/(segment_len*self.mean_curv_seg**2)
 from pyqtgraph.Qt import QtWidgets, QtCore
 class Filament_mech_gui():
     """ takes a list of file paths to make an filament onject
     """
     def __init__(self,folder_path,file_label,num_segs=5 ,del_bool =False,flip_corrd =False):
         super().__init__()
-        self.app = pg.mkQApp("Filament mech") 
+        self.app = pg.mkQApp("Filament Local mechanics") 
         
         self.mw = QtWidgets.QMainWindow()
         self.view = pg.GraphicsLayoutWidget()
@@ -801,10 +496,13 @@ class Filament_mech_gui():
                 fig.savefig(self.save_path+f"frame_{i}_win_num_{win_num}_win_size_{del_arc_l}_L_P_fit_pixel.png")
                 temp_win_a +=roll_win_size
                 temp_win_b = temp_win_a+del_arc_l;win_num+=1
-    def L_p_plot_poster(self,temp_win_a,ax,i_c,del_arc_l = 0.1):
+    def L_p_plot_poster(self,temp_win_a,ax,i_c,del_arc_l = 0.1,del_arc_l_nm = None):
         color_arr = ['deepskyblue','hotpink'];marker_arr= ['v','s']
-        config_label = ["S","C"]
         self.i_frame = 0
+
+        if del_arc_l_nm is not None:
+            del_arc_l = float(del_arc_l_nm/self.filaments_arr[self.i_frame].max_arc_l)
+        config_label = ["S","C"]
         temp_win_b = temp_win_a+del_arc_l
         rgn1 = [temp_win_a,temp_win_b]
 
@@ -839,8 +537,6 @@ class Filament_mech_gui():
             i_fil_mask =  self.masked_filament 
             xx = i_fil_mask.X
             yy = i_fil_mask.Y
-            
-            
             ax.scatter(xx,yy,s = 50)
                 
                        
@@ -913,6 +609,61 @@ class Filament_mech_gui():
                 temp_win_b = temp_win_a+del_arc_l;win_num+=1     
     def roll_win_L_p_1_per_1rgn_cont(self,del_arc_l = 0.1,del_arc_l_nm = None,df_renorm = None):
         '''
+        del_arc_l_nm : window size in nm
+        del_arc_l: window size in normalised arc length
+        compute and save LP from wlc and dist  
+        in one region simulateneously, x,0.1+x 
+        fil1 
+        doest this over a rollwing window moved at 10% of win size (del_arc_l)
+        
+        saves the fil
+        '''
+
+        roll_size = 0.1
+        color_arr = ['deepskyblue','hotpink'];marker_arr= ['v','s']
+        for i in range(self.num_frames):
+            self.i_frame = i
+            if df_renorm is None:
+                start_AL = 0;end_AL =1
+            else:
+                start_AL = df_renorm['norm_l_p_start'].to_numpy()[i]
+                end_AL = df_renorm['norm_l_p_end'].to_numpy()[i]
+            if del_arc_l_nm is not None:
+                del_arc_l = float(del_arc_l_nm/self.filaments_arr[i].max_arc_l)
+                roll_size = 0.1
+            #rolls over the arc len in a percent
+            roll_win_size = roll_size*del_arc_l
+            temp_win_a = start_AL
+            temp_win_b = temp_win_a+del_arc_l
+            win_num = 0
+            while temp_win_a+del_arc_l<=end_AL:
+
+                rgn1 = [temp_win_a,temp_win_b]
+                rgn_arr = [rgn1];i_rgn = 0
+                temp_rgn = rgn_arr[i_rgn]
+
+                self.update_arc_len_win(temp_rgn)
+                
+                i_fil_mask =  self.masked_filament  
+                L_p_green = i_fil_mask.L_p;R_sq_gr = i_fil_mask.L_p_R_sq
+                E_B = i_fil_mask.E_bend_fil;pt_curv_0mean = i_fil_mask.pt_curv - np.mean(i_fil_mask.pt_curv )
+                
+                arc_l_seg = i_fil_mask.arc_l_seg;end_end_seg = i_fil_mask.end_to_end_dist_2_seg
+                
+                
+                fitted_end_end_dist_sq = i_fil_mask.wlc_LP_fit(arc_l_seg,L_p_green)
+                self.save_rgn(f"roll_win_auto_{100*roll_size:.2f}_percent.csv",False)
+
+                temp_win_a +=roll_win_size
+                temp_win_b = temp_win_a+del_arc_l;win_num+=1
+                
+
+                
+    def roll_win_CWLC_1_per_1rgn_cont(self,del_arc_l = 0.1,del_arc_l_nm = None,df_renorm = None):
+        '''
+        this is to fit the curved WLC from the forde's lab from the smarttrace 
+        
+        
         del_arc_l_nm : window size in nm
         del_arc_l: window size in normalised arc length
         compute and save LP from wlc and dist  
@@ -1227,99 +978,15 @@ class Filament_mech_gui():
         return(df_test)
 
 
-    def radial_dist_func(self,win_i):
-        '''
-        dynamics of end end distr segment wise
-        #TODO find MSD for different time intervals
-        #TODO what is the avaerage angle 
-        
-        '''
-        lin_arr = np.linspace(0,1,int(np.ceil(1/win_i)), False)
-        df_test = pd.DataFrame( columns=['avg_arc_L','end_end_dist','frame_number'])
-        max_len = 0
 
-        for i in range(len(lin_arr)):
-            la = lin_arr[i]
-            temp_win_a =la;temp_win_b= la+win_i
-
-            if la <0.5:
-                fil_label = "fil1"
-                avg_arc_l = 0.5*(temp_win_a+temp_win_b)
-
-            else:
-                fil_label = "fil2"
-                avg_arc_l = 1- 0.5*(temp_win_a+temp_win_b)
-            temp_list = []
-            
-            for j in range(self.num_frames):
-                self.i_frame = j
-                self.update_arc_len_win([temp_win_a,temp_win_b])
-                i_fil_mask =  self.masked_filament
-                temp_list += [i_fil_mask.end_to_end_dist_2_raw[-1]]
-
-                N_test = len(df_test)
-                df_test.loc[N_test,'file_label']  = self.file_label
-                df_test.loc[N_test,'avg_arc_L']  = np.round(avg_arc_l,3)
-                df_test.loc[N_test,'avg_arc_L_whole_seg']  = np.round(0.5*(temp_win_a+temp_win_b),3)
-
-                df_test.loc[N_test,'end_end_dist_2']  =i_fil_mask.end_to_end_dist_2_raw[-1]
-                df_test.loc[N_test,'end_end_dist']  =np.sqrt(i_fil_mask.end_to_end_dist_2_raw[-1])
-                df_test.loc[N_test,'tangential_angle_deg']  =i_fil_mask.bending_ang_fil
-                df_test.loc[N_test,'L_p']  =i_fil_mask.L_p
-                print(avg_arc_l,i_fil_mask.L_p,i_fil_mask.L_p_R_sq)
-                df_test.loc[N_test,'L_p_Rsq']  =i_fil_mask.L_p_R_sq
-
-                df_test.loc[N_test,'l_seg']  =i_fil_mask.max_arc_l
-
-                #df_test.loc[N_test,f'{fil_label}_end_end_dist_{avg_arc_l}']  =i_fil_mask.end_to_end_dist_2_raw[-1]
-
-                df_test.loc[N_test,'frame_number']  = j
-                df_test.loc[N_test,'fil_label']  = fil_label
-
-        df_msd,df_msd_arr =find_MSD_metric_ori(df_test)
-        mask = df_msd['deltaT']<=(df_msd['deltaT'].max()+1)*0.5
-        df_msd = df_msd[mask] 
-        '''
-
-        fg =sns.FacetGrid(df_msd, col="avg_arc_L",row = "fil_label",hue = 'fil_label',height = 6) 
-        fg.map_dataframe(errplot, "deltaT", "MSD", "std_MSD")
-        fg.set(xscale = 'log');fg.set(yscale= 'log')
-
-        fg.fig.suptitle(df_msd['file_label'][0]+"MSD_radial")
-        fg.add_legend()
-
-        #fg.set(ylim=(-0.2,1),xlim=(0,20))
-        fg.fig.savefig(f"/Users/yogehs/Downloads/SbcC/MSD_scatters/radial/{self.file_label}_MSD_rad_overtime.png")
-        fg =sns.FacetGrid(df_msd, col="avg_arc_L",hue = "fil_label",row = "fil_label",height=6)  
-        fg.map_dataframe(errplot, "deltaT", "ang_MSD", "std_ang_MSD")
-        fg.set(xscale = 'log');fg.set(yscale= 'log')
-
-        fg.fig.suptitle(df_msd['file_label'][0]+"MSD_ang")
-        #fg.set(yscale='log',xscale='log')
-
-        #fg.set(ylim=(-0.2,2))
-        #fg.set(xlim=(0,20))
-
-        fg.add_legend()
-        fg.fig.savefig(f"/Users/yogehs/Downloads/SbcC/MSD_scatters/angle/{self.file_label}_MSD_angle_overtime.png")
-        '''
-        df_msd.to_csv(f"/Users/yogehs/Downloads/SbcC/MSD_scatters/{self.file_label}_MSD.csv")
-        df_msd.to_csv(f"{self.save_path}{self.file_label}_MSD.csv")
-        df_test.to_csv(f"{self.save_path}{self.file_label}_raw_preMSD.csv")
-
-        return(df_msd,df_msd_arr)
     def R_TAN_BEND_MSD(self,win_i):
         '''
-        dynamics of end end distr segment wise
-        #TODO find MSD for different time intervals
-        #TODO what is the avaerage angle 
-        
+        dynamics of end end distr segment wise        
         '''
         lin_arr = np.linspace(0,1,int(np.ceil(1/(win_i))), False)
         df_test = pd.DataFrame( columns=['avg_arc_L','end_end_dist','frame_number'])
         max_len = 0    
         fps = long_vids_fps[self.file_label]
-
 
         for i in range(len(lin_arr)):
             la = lin_arr[i]
@@ -1341,21 +1008,16 @@ class Filament_mech_gui():
                 if temp_win_b_2<=1:
                     if fil_label =='fil1':
                         self.i_frame = j
-                        print(temp_win_a_2,temp_win_b_2)
                         self.update_arc_len_win([temp_win_a_2,temp_win_b_2])
                         i_fil_mask =  self.masked_filament
                         pt_C = np.array([i_fil_mask.X_c[-1],i_fil_mask.Y_c[-1]])
         
                         self.update_arc_len_win([temp_win_a,temp_win_b])
                         i_fil_mask =  self.masked_filament
-                        
                         #finding the bend angle 
                         pt_A = np.array([i_fil_mask.X_c[0],i_fil_mask.Y_c[0]])
                         pt_B = np.array([i_fil_mask.X_c[-1],i_fil_mask.Y_c[-1]])
-                        
-                        bend_angle =find_angle(pt_A, pt_B, pt_C)
-                        
-                        
+                        bend_angle =find_angle(pt_A, pt_B, pt_C) 
                     else:
                         
                         #as the sense of filament reading is changing,
@@ -1386,50 +1048,46 @@ class Filament_mech_gui():
 
                 if fil_label =='fil1':
                     tan_angle_mask =  i_filament.tan_angle_arr[self.mask_win_gui]
-                    tan_angle = tan_angle_mask[1]
+                    tan_angle =  np.degrees(tan_angle_mask[1])
                     pt_A = np.array([i_fil_mask.X_c[0],i_fil_mask.Y_c[0]])
                     pt_B = np.array([i_fil_mask.X_c[-1],i_fil_mask.Y_c[-1]])
+                    pt_A_der =  np.array([np.gradient(i_fil_mask.X_c)[0],
+                                          np.gradient(i_fil_mask.Y_c)[0]])
                     
                     pt_mid = np.array([findMiddle_arr(i_fil_mask.X_c),findMiddle_arr(i_fil_mask.Y_c)])
                     
-                    angle_wrt_r = find_angle(pt_A, pt_mid,pt_B )
+                    angle_wrt_mid = find_angle(pt_A, pt_mid,pt_B )
+                    
+                    angle_wrt_r = find_angle(pt_A_der,pt_A,pt_B)
                 else:
                     tan_angle_mask =  i_filament.tan_angle_arr[self.mask_win_gui]
-                    tan_angle = tan_angle_mask[-1]
+                    tan_angle =  np.degrees(tan_angle_mask[-1])
 
                     pt_A = np.array([i_fil_mask.X_c[-1],i_fil_mask.Y_c[-1]])
                     pt_B = np.array([i_fil_mask.X_c[0],i_fil_mask.Y_c[0]])
-                    
+                    pt_A_der =  np.array([np.gradient(i_fil_mask.X_c)[-1],
+                                          np.gradient(i_fil_mask.Y_c)[-1]])
                     pt_mid = np.array([findMiddle_arr(i_fil_mask.X_c),findMiddle_arr(i_fil_mask.Y_c)])
                     
-                    angle_wrt_r = find_angle(pt_A, pt_mid,pt_B )
-
+                    angle_wrt_mid = find_angle(pt_A, pt_mid,pt_B )
+                    angle_wrt_r = find_angle(pt_A_der,pt_A,pt_B)
                 N_test = len(df_test)
                 df_test.loc[N_test,'file_label']  = self.file_label
                 df_test.loc[N_test,'config_label']  = self.file_label[0]
                 df_test.loc[N_test,'folder_number']  = self.file_label[1:]
-
                 df_test.loc[N_test,'frame_number']  = j
                 df_test.loc[N_test,'time_s']  = j/fps
-
-
                 df_test.loc[N_test,'avg_arc_L']  = avg_arc_l
                 df_test.loc[N_test,'avg_arc_L_whole_seg']  = np.round(0.5*(temp_win_a+temp_win_b),3)
-
                 df_test.loc[N_test,'end_end_dist_2']  =i_fil_mask.end_to_end_dist_2_raw[-1]
                 df_test.loc[N_test,'end_end_dist']  =np.sqrt(i_fil_mask.end_to_end_dist_2_raw[-1])
-                df_test.loc[N_test,'tangential_angle_rad']  = tan_angle
+                df_test.loc[N_test,'tangential_angle_deg']  = tan_angle
                 df_test.loc[N_test,'bend_angle_deg']  = bend_angle
-                df_test.loc[N_test,'angle_wrt_r']  = angle_wrt_r
-
-                
+                df_test.loc[N_test,'angle_wrt_mid_deg']  = angle_wrt_mid
+                df_test.loc[N_test,'angle_wrt_r_deg']  = angle_wrt_r
                 df_test.loc[N_test,'L_p']  =i_fil_mask.L_p
                 df_test.loc[N_test,'L_p_Rsq']  =i_fil_mask.L_p_R_sq
-
                 df_test.loc[N_test,'l_seg']  =i_fil_mask.arc_l[-1]-i_fil_mask.arc_l[0]
-
-                #df_test.loc[N_test,f'{fil_label}_end_end_dist_{avg_arc_l}']  =i_fil_mask.end_to_end_dist_2_raw[-1]
-
                 df_test.loc[N_test,'fil_label']  = fil_label
 
         df_msd,df_msd_arr =find_MSD_metric(df_test)
@@ -1443,44 +1101,8 @@ class Filament_mech_gui():
         df_msd['avg_arc_L_bend_angle'][mask_fil1] = np.round(df_msd['avg_arc_L'][mask_fil1],3)
         df_msd['avg_arc_L_bend_angle'][~mask_fil1 ]= np.round(df_msd['avg_arc_L'][~mask_fil1] - 0.1,3)
         
-        
-        '''
-
-        fg =sns.FacetGrid(df_msd, col="avg_arc_L",row = "fil_label",hue = 'fil_label',height = 6) 
-        fg.map_dataframe(errplot, "deltaT", "MSD", "std_MSD")
-        fg.set(xscale = 'log');fg.set(yscale= 'log')
-
-        fg.fig.suptitle(df_msd['file_label'][0]+"MSD_radial")
-        fg.add_legend()
-
-        #fg.set(ylim=(-0.2,1),xlim=(0,20))
-        fg.fig.savefig(f"/Users/yogehs/Downloads/SbcC/MSD_scatters/radial/{self.file_label}_MSD_rad_overtime.png")
-        fg =sns.FacetGrid(df_msd, col="avg_arc_L",hue = "fil_label",row = "fil_label",height=6)  
-        fg.map_dataframe(errplot, "deltaT", "ang_MSD", "std_ang_MSD")
-        fg.set(xscale = 'log');fg.set(yscale= 'log')
-
-        fg.fig.suptitle(df_msd['file_label'][0]+"MSD_ang")
-        #fg.set(yscale='log',xscale='log')
-
-        #fg.set(ylim=(-0.2,2))
-        #fg.set(xlim=(0,20))
-
-        fg.add_legend()
-        fg.fig.savefig(f"/Users/yogehs/Downloads/SbcC/MSD_scatters/angle/{self.file_label}_MSD_angle_overtime.png")
-        df_msd.to_csv(f"/Users/yogehs/Downloads/SbcC/MSD_scatters/{self.file_label}_MSD.csv")
-        df_msd.to_csv(f"{self.save_path}{self.file_label}_MSD.csv")
-        df_test.to_csv(f"{self.save_path}{self.file_label}_raw_preMSD.csv")
-
-        return(df_msd,df_msd_arr)    
-        '''
-
-        #df_msd.to_csv(f"/Users/yogehs/Downloads/SbcC/MSD_scatters/{self.file_label}_{win_i}_MSD_R_TAN_BEND.csv")
-        #df_msd.to_csv(f"{self.save_path}{self.file_label}_{win_i}_MSD_R_TAN_BEND.csv")
-        #df_msd_arr.to_csv(f"{self.save_path}{self.file_label}_{win_i}_MSD_distributions.csv")
-        df_msd_arr.to_csv(f"/Users/yogehs/Downloads/SbcC/MSD_scatters/{self.file_label}_{win_i}_MSD_distributions.csv")
-        #df_test.to_csv(f"/Users/yogehs/Downloads/SbcC/MSD_scatters/{self.file_label}_{win_i}_pre_MSD.csv")
-
         return(df_msd,df_msd_arr,df_test)
+
     def avg_curv_viz(self,win_i):
         '''
 

@@ -21,6 +21,8 @@ from scipy.stats import norm
 from collections import defaultdict
 import pandas as pd
 from constants import *
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator, FixedLocator
+
 # Get key mappings from Qt namespace
 qt_keys = (
     (getattr(QtCore.Qt, attr), attr[4:])
@@ -633,7 +635,7 @@ def fit_func_delta_L(df_all, monomer_bool=False, label_flip=False):
     '''
     df_fit = pd.DataFrame()
 
-    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(6, 6))
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
     if monomer_bool:
         n_fil = 1
     else:

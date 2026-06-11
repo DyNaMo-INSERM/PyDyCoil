@@ -1,5 +1,5 @@
 # Byte-compiled / optimized files
-__pycache__/
+__pycache__
 *.py[cod]
 *$py.class
 
@@ -35,3 +35,8 @@ Thumbs.db
 
 # PyCharm
 .idea/
+# Cache files
+*.cache
+roll_win_auto_10.00_percent.csv
+# Additional Spyder project files
+.spyderworkspace/

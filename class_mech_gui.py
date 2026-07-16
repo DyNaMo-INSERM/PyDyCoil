@@ -608,19 +608,25 @@ class Filament_mech_gui():
                 temp_win_a +=roll_win_size
                 temp_win_b = temp_win_a+del_arc_l;win_num+=1     
     def roll_win_L_p_1_per_1rgn_cont(self,del_arc_l = 0.1,del_arc_l_nm = None,df_renorm = None):
-        '''
-        del_arc_l_nm : window size in nm
-        del_arc_l: window size in normalised arc length
-        compute and save LP from wlc and dist  
-        in one region simulateneously, x,0.1+x 
-        fil1 
-        doest this over a rollwing window moved at 10% of win size (del_arc_l)
-        
-        saves the fil
-        '''
+
+        """
+        Perform rolling window analysis for persistence length (L_p) over a specific region.
+        for each frame/time point, 
+
+        This method calculates the persistence length (L_p) for a filament using a rolling 
+        window approach over the normalized contour lenght.
+        It divides the filament into overlapping segments based on the 
+        specified window size (del_arc_l_nm in nm) and step size (10% of del_arc_l_nm in nm ), 
+        and computes L_p for each rolling window.
+
+        the output is stored within the class instance and
+        can be saved to a CSV file using the save_rgn method.
+        """
+       
 
         roll_size = 0.1
         color_arr = ['deepskyblue','hotpink'];marker_arr= ['v','s']
+        #to loop over the all the frames
         for i in range(self.num_frames):
             self.i_frame = i
             if df_renorm is None:
@@ -980,9 +986,25 @@ class Filament_mech_gui():
 
 
     def R_TAN_BEND_MSD(self,win_i):
-        '''
-        dynamics of end end distr segment wise        
-        '''
+        """
+        Calculate the dynamics of end-to-end distance and bending angle segment-wise.
+
+        This method computes the dynamics of the end-to-end distance and bending angle 
+        for each segment of the filament over time. It processes the filament data 
+        frame-by-frame and for each frame calculates end to end distances and angle for a segment of size (win_size)
+        
+        Args:
+            win_i (float): The window size for segment-wise analysis, expressed as a 
+                fraction of the normalized arc length.
+
+        Returns:
+            tuple:
+                - df_msd (pd.DataFrame): DataFrame containing the calculated MSD metrics.
+                - df_msd_arr (pd.DataFrame): DataFrame containing intermediate MSD metrics.
+                - df_test (pd.DataFrame): DataFrame containing detailed segment-wise metrics 
+                for each frame.
+        """
+        
         lin_arr = np.linspace(0,1,int(np.ceil(1/(win_i))), False)
         df_test = pd.DataFrame( columns=['avg_arc_L','end_end_dist','frame_number'])
         max_len = 0    

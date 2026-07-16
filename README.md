@@ -2,19 +2,29 @@
 
 ## Introduction
 PyDycoil is a Python-based analysis package for quantifying the local flexibility and dynamics of filamentous proteins (here, coiled-coil structures) from high-speed atomic force microscopy (HS-AFM) imaging data.
-Briefly, the following analyses are implemented in the scripts:
-- *Local flexibility*: This involves aligning individual coiled coils, normalizing their contour lengths, computing persistence length via a 2D worm-like chain (WLC) fit, and averaging the results.
-- *Dynamics*: This analysis involves tracking time-resolved fluctuations in coiled coils’ end-to-end distance (R) and bending angle (θ), computing mean-square displacements, and fitting them with an equation for a homogeneous semiflexible filament to extract effective persistence length, internal friction, and relaxation times, followed by averaging and rescaling across conformations.
+
+Briefly, the following analyses are implemented in the jupyter notebooks:
+- *Local flexibility*: This involves aligning individual coiled coils, normalizing their contour lengths, computing persistence length via a 2D worm-like chain (WLC) fit, and averaging the results over time. An example implementation for the test dataset is provided in the local_lp.ipynb Jupyter notebook.
+
+- *Dynamics*: This analysis involves tracking time-resolved fluctuations in coiled coils’ end-to-end distance (R) and bending angle (θ), computing mean-square displacements, and fitting them with an equation for a homogeneous semiflexible filament to extract effective persistence length, internal friction, and relaxation times, followed by averaging and rescaling across conformations. An example implementation for the test dataset is provided in the MSD.ipynb Jupyter notebook.
+
+An example dataset of interpolated X and Y coordinates from the coiled-coil trajectory (S configuration) of the bacterial MR complex is provided in the S/ folder.
+Each .csv file contains the interpolated X and Y coordinates for each time point (frame) in the trajectory.
 
 ## Step-by-step guide
-### Installation
-- The scripts are compatible with Python 3.10 or higher 
-- Required Python libraries: pandas (reading CSV files), numpy (numerical operations), scipy (curve fitting), matplotlib (plotting), seaborn (statistical visualization)
-- Install Anaconda distribution that includes Python, Spyder IDE (used in our paper) and most libraries preinstalled. If any dependencies are missing in your virtual environment, they can be installed using, for example:
-```bash
-pip install pandas numpy scipy matplotlib seaborn
+- Clone the repository
 ```
-Download all scripts in the folder named *scripts*, along with the example CSV files provided in the *example* folder, to run the analysis workflow locally on your computer. The example datasets are interpolated coordinates from coiled coil's trajectory from bacterial MR complex.
+git clone https://github.com/DyNaMo-INSERM/PyDyCoil.git
+```
+- Create an environment with python 3.9
+```
+conda create -n yourenvname python=3.9 
+conda activate yourenvname
+```
+- Install the dependencies from requirements.txt
+```
+pip install -r requirements.txt
+```
 
 ### How to use ⚠️
 

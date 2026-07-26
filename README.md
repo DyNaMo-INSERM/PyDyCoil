@@ -15,6 +15,7 @@ Each .csv file contains the interpolated X and Y coordinates for each time point
 - Clone the repository
 ```
 git clone https://github.com/DyNaMo-INSERM/PyDyCoil.git
+cd PyDyCoil
 ```
 - Create an environment with python 3.9
 ```
@@ -26,11 +27,12 @@ conda activate yourenvname
 pip install -r requirements.txt
 ```
 
-- Launch Jupyter Notebook
+- Launch Jupyter Notebook 
 ```
 jupyter notebook
 ```
 - Open and run the notebooks
+The repository contains the example dataset and the following analysis notebooks:
 local_lp.ipynb – Local flexibility analysis
 MSD.ipynb – Dynamics analysis
 

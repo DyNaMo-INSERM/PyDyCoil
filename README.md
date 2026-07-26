@@ -25,6 +25,11 @@ conda activate yourenvname
 ```
 pip install -r requirements.txt
 ```
+
+- Launch Jupyter Notebook
+```
+jupyter notebook
+```
 ### Preprint: 
 DOI: 10.64898/2026.07.21.739852
 ## Citation

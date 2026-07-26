@@ -11,7 +11,7 @@ Briefly, the following analyses are implemented in the jupyter notebooks:
 An example dataset of interpolated X and Y coordinates from the coiled coil trajectory (S configuration) of the bacterial MR complex is provided in the S/ folder.
 Each .csv file contains the interpolated X and Y coordinates for each time point (frame) in the trajectory.
 
-## Step-by-step guide
+## Step-by-Step Guide
 - Clone the repository
 ```
 git clone https://github.com/DyNaMo-INSERM/PyDyCoil.git
@@ -34,7 +34,7 @@ jupyter notebook
 - Open and run the notebooks. The repository contains the example dataset and the following analysis notebooks:
  `local_lp.ipynb` – Local flexibility analysis and `MSD.ipynb` – Dynamics analysis
 
-## Preprint: 
+## Preprint 
 DOI: 10.64898/2026.07.21.739852
 ## Citation
 If you use PyDyCoil in your research, please cite this repository.

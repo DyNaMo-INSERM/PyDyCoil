@@ -25,8 +25,6 @@ conda activate yourenvname
 ```
 pip install -r requirements.txt
 ```
-## Acknowledgements
-This project has received funding from the Human Frontier Science Program (grant no. RGP0056/2018) and the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation program (grant no. 772257).
 ### Preprint: 
 DOI: 10.64898/2026.07.21.739852
 ## Citation

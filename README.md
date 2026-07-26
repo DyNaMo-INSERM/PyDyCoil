@@ -31,10 +31,9 @@ pip install -r requirements.txt
 ```
 jupyter notebook
 ```
-- Open and run the notebooks
-The repository contains the example dataset and the following analysis notebooks:
-#### local_lp.ipynb – Local flexibility analysis
-#### MSD.ipynb – Dynamics analysis
+- Open and run the notebooks. The repository contains the example dataset and the following analysis notebooks:
+##### local_lp.ipynb – Local flexibility analysis
+##### MSD.ipynb – Dynamics analysis
 
 ### Preprint: 
 DOI: 10.64898/2026.07.21.739852

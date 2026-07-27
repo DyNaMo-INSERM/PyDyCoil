@@ -698,11 +698,16 @@ def fit_func_delta_L(df_all, monomer_bool=False, label_flip=False):
             axs.set_title(f"{file_label}_MSD")
             axs.errorbar((t_data), MSD_R, yerr=MSD_R_sem, marker=marker_arr[i_fil],
                             color=color_arr[i], capsize=2, fmt='o')
+            label = (
+        fr"{i+1}: "
+        fr"$\tau={tau_fitted:.2f}$, "
+        fr"$L_p={lp_fitted:.2f}$, "
+        fr"$\zeta={zeta_fitted:.2f}$")
 
             axs.plot(t_data, delta_R_tau(t_data,  tau_fitted, lp_fitted, L_fitted),
-                        label=f'{i+1}_tau_{tau_fitted:.2f}_L_p_{lp_fitted:.2f}_zeta_{zeta_fitted:.2f}', color=color_arr[i])
-            axs.set_xlabel('Time (s)')
-            axs.set_ylabel('MSD  R')
+                        label=label, color=color_arr[i])
+            axs.set_xlabel(r'$\Delta t\ (s)$' )
+            axs.set_ylabel(r'$\delta R^{2}\ (nm^2)$' )
             axs.set_xscale('log')
             axs.set_yscale('log')
             axs.set_ylim((y_min), (y_max))
